@@ -1,0 +1,38 @@
+<idea-plugin>
+    <id>com.mcob.terminal-mcp-bridge</id>
+    <name>终端 MCP 桥接</name>
+    <version>0.1.21</version>
+    <vendor email="local@example.invalid">MCOB Local Tools</vendor>
+
+    <idea-version since-build="262" until-build="262.*"/>
+
+    <description>
+        通过可配置的全局权限模型，向本地 MCP 客户端提供 PyCharm 终端、终端创建、部署和远程文件自动化能力。
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>org.jetbrains.plugins.terminal</depends>
+    <depends>com.jetbrains.plugins.webDeployment</depends>
+    <depends optional="true" config-file="terminal-mcp-mcpserver.xml">com.intellij.mcpServer</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="com.mcob.terminalmcp.TerminalMcpSettings"/>
+        <applicationConfigurable
+            id="com.mcob.terminalmcp.settings"
+            parentId="tools"
+            displayName="终端 MCP 桥接"
+            instance="com.mcob.terminalmcp.TerminalMcpConfigurable"/>
+        <postStartupActivity implementation="com.mcob.terminalmcp.TerminalMcpStartupActivity"/>
+        <notificationGroup id="TerminalMcpBridgeNotifications" displayType="BALLOON"/>
+    </extensions>
+
+    <actions>
+        <action
+            id="com.mcob.terminalmcp.CopyMcpConfigAction"
+            class="com.mcob.terminalmcp.CopyMcpConfigAction"
+            text="复制终端 MCP 桥接配置"
+            description="复制终端 MCP 桥接的全局 MCP 配置">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
+</idea-plugin>

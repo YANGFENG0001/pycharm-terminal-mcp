@@ -1,0 +1,6 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <mcpServer.mcpToolset implementation="com.mcob.terminalmcp.TerminalMcpToolset"/>
+    </extensions>
+</idea-plugin>
+
