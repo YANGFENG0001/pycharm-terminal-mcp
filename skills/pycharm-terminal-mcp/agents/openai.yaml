@@ -1,0 +1,4 @@
+interface:
+  display_name: "PyCharm Terminal MCP Bridge"
+  short_description: "使用保存的 SSH 终端、原生部分上传与服务器直传，按运行能力检查权限和结果"
+  default_prompt: "使用 $pycharm-terminal-mcp 发现当前插件能力与设置，按我指定的项目、服务器和操作范围执行并核验结果。"

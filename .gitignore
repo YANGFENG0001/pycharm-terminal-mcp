@@ -1,0 +1,22 @@
+# Gradle and IntelliJ build output
+.gradle/
+.gradle-cache/
+.intellijPlatform/
+.kotlin/
+build/
+
+# Local IDE files
+.idea/
+*.iml
+
+# Historical/manual build artifacts kept out of the public repo
+manual-build/
+java-src/
+mcp-server/
+
+# Local runtime files
+*.log
+*.tmp
+tmp_*.txt
+.DS_Store
+Thumbs.db
