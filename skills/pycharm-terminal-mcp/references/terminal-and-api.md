@@ -2,6 +2,8 @@
 
 ## 调用方式
 
+263 宿主在桥接函数执行前解析项目。0.1.52 的全局跟随连接由用户导出并加入客户端，使用 `IJ_MCP_SERVER_PROJECT_PATH: terminal-mcp:current-project`，每次调用跟随当前/最近激活的项目；聊天目录无需在 IDE 打开。能力 `projectPath` 为实际 IDE 项目，切换后重新发现 ID。不要传旧目录作为 `projectPath`；省略或传跟随标记。显式 `project_selector` 必须匹配本次项目，旧 ID 不替换。多项目无明确窗口/项目关闭/不匹配时拒绝；已开始操作不改派。固定连接无标记时沿用原生路由，ACP 项目自动注入仍有宿主限制。工具缺失先检查连接，不重试远程传输或绕过认证。
+
 优先使用宿主直接暴露工具的类型化参数。若宿主实际提供命令字符串形式的 `execute_tool`，根据它的 schema 传命令；该形式的 JSON 数组应保留为一个参数，例如：
 
 ```text
@@ -42,7 +44,9 @@ upload_selected_files_to_deployment_server --project_selector <PROJECT> --local_
 }
 ```
 
-工具为 `execute_global_terminal_command`。SSH POSIX 使用 auto，本地 POSIX 须明确 `shell="posix"`；等待协议不支持 PowerShell/cmd，不能强行注入 POSIX 包装。以运行 schema 为准；0.1.50 超时范围 100..240000 ms。
+0.1.53 工具调用前关闭设置/连接/确认等模态弹窗，两种项目路由均在弹窗期间拒绝，不排队重发；这不取消此前已启动操作。设置页顶部也提供中文连接复制/检查按钮。
+
+工具为 `execute_global_terminal_command`。SSH POSIX 使用 auto，本地 POSIX 须明确 `shell="posix"`；等待协议不支持 PowerShell/cmd，不能强行注入 POSIX 包装。以运行 schema 为准；0.1.53 超时范围 100..240000 ms。
 
 | 情况 | 原始结构化字段 |
 |---|---|

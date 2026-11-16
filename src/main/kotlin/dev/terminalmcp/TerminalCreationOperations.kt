@@ -80,7 +80,7 @@ class TerminalCreationOperations(
 
         val content = invokeOnEdt {
             val manager = TerminalToolWindowManager.getInstance(project)
-            val widget = manager.createLocalShellWidget(resolvedTitle, resolvedDirectory).asNewWidget()
+            val widget = manager.createLocalShellWidget(resolvedDirectory, resolvedTitle).asNewWidget()
             val content = manager.getContainer(widget)?.content
                 ?: error("The created terminal tab is not attached to PyCharm's terminal tool window.")
             TerminalTitleOverrides.set(content, resolvedTitle)
@@ -118,7 +118,7 @@ class TerminalCreationOperations(
             }
             val event = AnActionEvent.createFromDataContext(
                 "Terminal MCP Bridge",
-                match.action.templatePresentation,
+                match.action.templatePresentation.clone(),
                 dataContext,
             )
             match.action.actionPerformed(event)

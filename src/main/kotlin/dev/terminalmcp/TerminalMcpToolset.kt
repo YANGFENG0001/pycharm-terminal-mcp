@@ -41,9 +41,11 @@ class TerminalMcpToolset : McpToolset {
     fun get_terminal_mcp_capabilities(): TerminalMcpCapabilitiesResult =
         TerminalMcpCapabilitiesResult(
             toolsetAlwaysIncluded = true,
-            pluginVersion = PluginManagerCore.getPlugin(PluginId.getId("dev.terminalmcp.bridge"))?.version ?: "unknown",
+            pluginVersion = PluginManagerCore.getPlugin(PluginId.getId("com.mcob.terminal-mcp-bridge"))?.version ?: "unknown",
+            projectPath = McpRequestProject.current()?.basePath,
             currentSettings = currentSettingsResult(),
             recommendedWorkflow = listOf(
+                "0. projectPath 是宿主为本次调用固定的 IDE 项目，不是聊天工作目录。全局跟随连接在下一次调用时跟随当前项目；切换后重新发现服务器和终端，不复用旧项目 ID。显式 project_selector 必须匹配本次项目，否则拒绝，不自动换目标。",
                 "1. Call list_global_terminals before reading or writing an existing terminal.",
                 "1a. POSIX/SSH 命令优先使用 execute_global_terminal_command，默认等待完成并直接返回 output/exit_code/completed/timed_out，无需额外 read。超时不重发；持久 cd/export 或交互任务使用 send_global_terminal_text。",
                 "2. Call list_remote_servers and list_selected_deployment_servers before any server or file-transfer action.",
@@ -89,7 +91,8 @@ class TerminalMcpToolset : McpToolset {
     @McpToolHints(readOnlyHint = McpToolHintValue.TRUE, destructiveHint = McpToolHintValue.FALSE)
     @McpDescription(
         """
-        Lists integrated terminal tabs across all open PyCharm projects.
+        Lists integrated terminal tabs in the IDE project pinned for this MCP call; returns projectPath on each terminal.
+        A follow-current connection follows the current IDE window on the next call. Rediscover IDs after switching projects.
         Respects the global Terminal MCP Bridge permission mode and per-terminal AI access toggles.
         Empty results do not mean SSH work is impossible: use ensure_saved_ssh_terminal for the explicitly intended saved server before reporting no terminal.
         """
@@ -256,7 +259,7 @@ class TerminalMcpToolset : McpToolset {
 
     @McpTool(title = "List PyCharm selected deployment servers")
     @McpToolHints(readOnlyHint = McpToolHintValue.TRUE, destructiveHint = McpToolHintValue.FALSE)
-    @McpDescription("Lists Web Deployment servers configured for open projects, including the selected/default server and local-to-remote mappings.")
+    @McpDescription("列出本次连接项目的 Web Deployment 服务器和映射。跟随当前项目的连接会在切换后使用新项目；不要复用旧项目 ID。显式 project_selector 必须匹配本次宿主项目。")
     fun list_selected_deployment_servers(
         @McpDescription("Optional project name or path selector.")
         project_selector: String? = null,
@@ -639,6 +642,7 @@ data class TerminalMcpCapabilitiesResult(
     val terminalTools: List<String>,
     val deploymentTools: List<String>,
     val limitation: String,
+    @EncodeDefault val projectPath: String? = null,
 )
 
 @Serializable

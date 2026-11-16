@@ -6,11 +6,16 @@ plugins {
 }
 
 group = "dev.terminalmcp"
-version = "0.1.50"
+version = "0.1.53"
 
 dependencies {
     intellijPlatform {
-        pycharm("2026.2.0.1")
+        val localIde = providers.gradleProperty("pycharmLocalPath")
+        if (localIde.isPresent) {
+            local(localIde.get())
+        } else {
+            pycharm(providers.gradleProperty("pycharmVersion").orElse("263.7307.206"))
+        }
         bundledPlugin("org.jetbrains.plugins.terminal")
         bundledPlugin("com.jetbrains.plugins.webDeployment")
         bundledPlugin("com.intellij.mcpServer")
@@ -23,18 +28,24 @@ dependencies {
 
 intellijPlatform {
     pluginConfiguration {
-        id = "dev.terminalmcp.bridge"
+        id = "com.mcob.terminal-mcp-bridge"
         name = "终端 MCP 桥接"
         version = project.version.toString()
 
         ideaVersion {
-            sinceBuild = "262"
-            untilBuild = provider { null }
+            sinceBuild = "263.7307.206"
+            untilBuild = "263.*"
         }
     }
 }
 
 tasks {
+    val verifyMcpConnection by registering(JavaExec::class) {
+        dependsOn(testClasses)
+        classpath = sourceSets["test"].runtimeClasspath + sourceSets["main"].compileClasspath
+        mainClass.set("dev.terminalmcp.McpConnectionRegression")
+    }
+    check { dependsOn(verifyMcpConnection) }
     val verifySelectedFilePaths by registering(JavaExec::class) {
         dependsOn(testClasses)
         classpath = sourceSets["test"].runtimeClasspath + sourceSets["main"].compileClasspath
@@ -82,8 +93,8 @@ tasks {
     test { failOnNoDiscoveredTests.set(false) }
 
     patchPluginXml {
-        sinceBuild.set("262")
-        untilBuild.set("")
+        sinceBuild.set("263.7307.206")
+        untilBuild.set("263.*")
     }
 
     withType<JavaCompile> {

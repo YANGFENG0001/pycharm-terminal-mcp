@@ -13,8 +13,8 @@ class TerminalMcpStartupActivity : ProjectActivity {
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("Terminal MCP Bridge")
                 .createNotification(
-                    "Terminal MCP Bridge is in Autopilot mode",
-                    "AI can read and write all integrated terminals without plugin confirmation.",
+                    "终端 MCP 桥接已启用全自动模式",
+                    "AI 可读写本次连接项目的可访问终端，无需插件再次确认。全局 MCP 连接可跟随当前项目，不要求打开聊天目录。",
                     NotificationType.WARNING,
                 )
                 .notify(project)
@@ -23,8 +23,8 @@ class TerminalMcpStartupActivity : ProjectActivity {
             NotificationGroupManager.getInstance()
                 .getNotificationGroup("Terminal MCP Bridge")
                 .createNotification(
-                    "Terminal MCP Bridge is in Unguarded mode",
-                    "AI can read and write all integrated terminals without plugin confirmation.",
+                    "终端 MCP 桥接已启用不设防模式",
+                    "AI 可读写所有可访问的集成终端，无需插件再次确认。",
                     NotificationType.WARNING,
                 )
                 .notify(project)

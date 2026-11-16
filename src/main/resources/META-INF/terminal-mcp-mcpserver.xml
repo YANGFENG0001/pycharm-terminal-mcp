@@ -1,6 +1,22 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceInterface="com.intellij.mcpserver.impl.McpSessionProjectResolver"
+                            serviceImplementation="dev.terminalmcp.CurrentProjectResolver" overrides="true"/>
         <mcpServer.mcpToolset implementation="dev.terminalmcp.TerminalMcpToolset"/>
     </extensions>
+    <actions>
+        <action id="dev.terminalmcp.CopyMcpConfigAction"
+                class="dev.terminalmcp.CopyMcpConfigAction"
+                text="复制终端 MCP 连接配置"
+                description="复制跟随当前项目的全局 MCP 配置，支持 Air JSON 与 Codex TOML，不含凭据">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+        <action id="dev.terminalmcp.DiagnoseMcpConnectionAction"
+                class="dev.terminalmcp.DiagnoseMcpConnectionAction"
+                text="检查终端 MCP 连接"
+                description="检查 IDE 版本、MCP 开关、监听地址、桥接声明和已打开项目">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>
 

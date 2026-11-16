@@ -1,10 +1,10 @@
 <idea-plugin>
-    <id>dev.terminalmcp.bridge</id>
+    <id>com.mcob.terminal-mcp-bridge</id>
     <name>终端 MCP 桥接</name>
-    <version>0.1.50</version>
+    <version>0.1.53</version>
     <vendor email="local@example.invalid">Terminal MCP Bridge</vendor>
 
-    <idea-version since-build="262" until-build="262.*"/>
+    <idea-version since-build="263.7307.206" until-build="263.*"/>
 
     <description>
         向本地 MCP 客户端提供 PyCharm 终端、终端创建、Deployment 文件传输和远程自动化能力，并提供可配置的全局权限控制。
@@ -26,13 +26,4 @@
         <notificationGroup id="Terminal MCP Bridge" displayType="BALLOON"/>
     </extensions>
 
-    <actions>
-        <action
-            id="dev.terminalmcp.CopyMcpConfigAction"
-            class="dev.terminalmcp.CopyMcpConfigAction"
-            text="复制终端 MCP 桥接配置"
-            description="复制终端 MCP 桥接的全局 MCP 配置">
-            <add-to-group group-id="ToolsMenu" anchor="last"/>
-        </action>
-    </actions>
 </idea-plugin>

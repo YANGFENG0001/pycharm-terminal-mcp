@@ -7,6 +7,9 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.serializer
+import kotlin.reflect.full.valueParameters
+import kotlin.reflect.jvm.kotlinFunction
 import java.net.URLClassLoader
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -28,6 +31,15 @@ object PluginClassloaderRegression {
                     zip.getInputStream(entry).use { input -> Files.copy(input, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING) }
                     ZipFile(file.toFile()).use { nested ->
                         check(nested.getEntry("kotlin/jvm/internal/IntCompanionObject.class") == null)
+                        nested.getEntry("META-INF/plugin.xml")?.let { descriptor ->
+                            val factory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+                            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+                            val document = nested.getInputStream(descriptor).use { factory.newDocumentBuilder().parse(it) }
+                            check(document.getElementsByTagName("id").item(0).textContent == "com.mcob.terminal-mcp-bridge")
+                            val compatibility = document.getElementsByTagName("idea-version").item(0) as org.w3c.dom.Element
+                            check(compatibility.getAttribute("since-build") == "263.7307.206")
+                            check(compatibility.getAttribute("until-build") == "263.*")
+                        }
                     }
                 }
             }
@@ -43,6 +55,29 @@ object PluginClassloaderRegression {
                 }
             }
             loader.use {
+                val connectionUi = loader.loadClass("dev.terminalmcp.McpConnectionUi")
+                val controls = connectionUi.getMethod("controls").invoke(connectionUi.getField("INSTANCE").get(null)) as javax.swing.JPanel
+                val labels = controls.components.map { (it as javax.swing.JButton).text }
+                check(labels == listOf("复制终端 MCP 连接配置", "检查终端 MCP 连接"))
+                check((controls.layout as java.awt.GridLayout).columns == 1)
+                val resolverType = loader.loadClass("dev.terminalmcp.CurrentProjectResolver")
+                val resolver = resolverType.getConstructor().newInstance()
+                check(parent.loadClass("com.intellij.mcpserver.impl.McpSessionProjectResolver").isInstance(resolver))
+                resolverType.declaredMethods.single { it.name == "resolveSessionProject" }.parameterTypes
+                val toolsetType = loader.loadClass("dev.terminalmcp.TerminalMcpToolset")
+                val toolset = toolsetType.getConstructor().newInstance()
+                val methods = toolsetType.declaredMethods
+                val tools = methods.filter { method -> method.annotations.any { it.annotationClass.java.name == "com.intellij.mcpserver.annotations.McpTool" } }
+                check(tools.size == 26) { "Expected 26 bridge tools, found ${tools.size}" }
+                check(toolsetType.getMethod("alwaysIncluded").invoke(toolset) == true)
+                check(toolsetType.getMethod("isExperimental").invoke(toolset) == false)
+                // Resolve all public signatures against this IDE SDK, not only serializers.
+                tools.forEach { method ->
+                    method.parameterTypes; method.returnType; method.genericReturnType
+                    val function = checkNotNull(method.kotlinFunction)
+                    serializer(function.returnType).descriptor
+                    function.valueParameters.forEach { serializer(it.type).descriptor }
+                }
                 check(loader.loadClass("kotlin.jvm.internal.IntCompanionObject") === parent.loadClass("kotlin.jvm.internal.IntCompanionObject"))
                 val resultType = loader.loadClass("dev.terminalmcp.TerminalExecutionResult")
                 check(resultType.classLoader === loader)
@@ -76,6 +111,6 @@ object PluginClassloaderRegression {
         } finally {
             jars.forEach { Files.deleteIfExists(it) }
         }
-        println("Plugin classloader regression: isolated serializer/schema and explicit null passed; no bundled Kotlin runtime")
+        println("Plugin classloader regression: Chinese connection controls, 26 tool signatures/serializers, 263 descriptor, explicit null and runtime isolation passed")
     }
 }

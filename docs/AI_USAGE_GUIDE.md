@@ -5,7 +5,7 @@
 > **这份文档是给 AI / 代理读的。** 人类安装说明见 [../README.md](../README.md) 与 [INSTALL.md](INSTALL.md)。
 > 目标：新会话的 AI 读完本文即可**不猜测、不试探**地正确使用本插件。
 >
-> 适用版本：**0.1.50**。若 `pluginVersion` 与本文不同，**以 `get_terminal_mcp_capabilities` 实际返回为准**，并把差异记回本文。
+> 适用版本：**0.1.53**，PyCharm 2026.3（263.7307.206 起的 263 构建）。若 `pluginVersion` 与本文不同，**以 `get_terminal_mcp_capabilities` 实际返回为准**，并把差异记回本文。
 
 ---
 
@@ -27,9 +27,17 @@
 
 ## 1. 会话开头的固定动作（不要跳过）
 
+0.1.52 可使用全局跟随连接：用户通过“工具 → 复制终端 MCP 连接配置”选择 Air/ACP JSON 或 Codex TOML，加入客户端全局 MCP 并启用。请求头 `IJ_MCP_SERVER_PROJECT_PATH: terminal-mcp:current-project` 使每次调用跟随当前/最近激活的 IDE 项目，不要求聊天目录在 IDE 打开，不固定历史项目或服务器。连接仍使用内置 MCP 监听和授权，不创建旁路服务器。
+
+能力返回 `projectPath` 是本次调用的 IDE 项目；切换项目后重新查询能力、设置及服务器/终端。不传旧项目 `projectPath`，可省略或传 `terminal-mcp:current-project`；`project_selector` 如传入必须匹配本次项目。正在执行的操作保持本次项目，后续调用才跟随切换。多个项目无法确定当前窗口、项目关闭、显式项目不匹配均拒绝；不使用任意第一个项目，不替换服务器或终端 ID。固定项目连接仍保留 IDE 原有路由。
+
+ACP 项目级自动注入仍受宿主已打开项目限制，插件不会自动把全局连接写进任意客户端。工具不可发现时先让用户使用中文连接检查，不归因于 SSH 服务器。不要猜端口、读取令牌、自动改代理或 MCP/权限设置。详见 [MCP_TOOL_DISCOVERY.md](MCP_TOOL_DISCOVERY.md)。
+
+0.1.53 起，在“设置 → 工具 → 终端 MCP 桥接”顶部也有“复制终端 MCP 连接配置”和“检查终端 MCP 连接”。设置、SSH 连接或确认等模态弹窗打开时，全局跟随及固定项目解析会及时拒绝，而不是排队等待。先关闭或完成弹窗，再重新读取能力/设置；不要因超时连续重发写入。已启动的操作不因此取消，必须单独核对其状态。项目路由阶段的错误由宿主返回，不属于插件业务 JSON。
+
 ```text
 1) get_terminal_mcp_capabilities
-   → 拿 pluginVersion、terminalTools、deploymentTools、recommendedWorkflow、currentSettings
+   → 拿 pluginVersion、projectPath、terminalTools、deploymentTools、recommendedWorkflow、currentSettings
 2) get_terminal_mcp_settings
    → 拿当前权限（本本文第 8 节的开关表）
 3) 然后按任务选分支（第 6 节）
@@ -76,13 +84,13 @@ tool_name --arg value --flag true
 
 ---
 
-## 4. 工具目录（0.1.50，共 26 个）
+## 4. 工具目录（0.1.53，共 26 个）
 
 ### 4.1 终端读取 / 控制
 
 | 工具 | 参数 | 说明 |
 |---|---|---|
-| `list_global_terminals` | — | 列出终端：`id`、`logical_id`、`title`、`projectPath`、`ssh`、`canRead`、`canWrite`、`selected`、`active` |
+| `list_global_terminals` | — | MCP 调用内只列出本次连接项目的终端；字段含 `id`、`logical_id`、`title`、`projectPath`、`ssh`、`canRead`、`canWrite`、`selected`、`active`。切换后重新发现 |
 | `read_global_terminal` | `terminal_id`, `max_lines=200` | 读最近输出；**不是**命令完成判定手段 |
 | `send_global_terminal_text` | `terminal_id`, `text`, `press_enter=false` | 原样发文本；交互式输入用 |
 | `interrupt_global_terminal` | `terminal_id` | 发送 Ctrl+C (ETX) |
@@ -102,7 +110,7 @@ tool_name --arg value --flag true
 | 工具 | 参数 | 说明 |
 |---|---|---|
 | `list_predefined_terminals` | `project_selector?` | 列出 PyCharm 已保存终端预设（含 SSH） |
-| `create_local_terminal` | `project_selector?`, `title?`, `working_directory?` | 新建本地终端 |
+| `create_local_terminal` | `project_selector?`, `title?`, `working_directory?` | 新建本地终端；0.1.53 修复工作目录/标签参数传反。返回创建结果后另行确认 shell 已启动及实际目录；不把创建结果当作 POSIX 执行支持 |
 | `create_predefined_terminal` | `selector`, `project_selector?` | 打开唯一匹配预设；**返回只表示动作已触发，不代表认证就绪** |
 | `ensure_saved_ssh_terminal` | `server_selector`, `project_selector?`, `timeout_ms=30000` | **首选**：复用或在必要时从预设创建，等待连接 + POSIX 提示符 + 只读 `printf` 探测 |
 

@@ -10,12 +10,15 @@ import org.jetbrains.plugins.terminal.TerminalToolWindowManager
 import java.security.MessageDigest
 
 class TerminalRegistry(private val settings: TerminalMcpSettings) {
+    private val requestProject = McpRequestProject.current()
+
     fun list(): List<TerminalHandle> {
         val app = ApplicationManager.getApplication()
         val result = mutableListOf<TerminalHandle>()
         app.invokeAndWait {
             ProjectManager.getInstance().openProjects
                 .filterNot { it.isDisposed }
+                .filter { requestProject == null || it == requestProject }
                 .forEach { project ->
                     result += collectFromProject(project)
                 }

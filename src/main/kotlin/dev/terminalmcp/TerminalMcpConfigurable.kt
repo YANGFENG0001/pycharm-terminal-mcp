@@ -49,6 +49,8 @@ class TerminalMcpConfigurable : Configurable {
         scopeBox.renderer = localizedRenderer { scopeLabel(it as TerminalScope) }
 
         panel = FormBuilder.createFormBuilder()
+            .addComponent(McpConnectionUi.controls())
+            .addComponent(JBLabel("<html>MCP 为 IDE 全局服务。复制配置后，需将连接加入客户端并启用，再刷新或新建会话。<br>聊天目录无需在 IDE 打开；切换项目影响后续调用，不改变已开始的传输目标。<br>调用工具前请先关闭设置、连接或确认对话框。</html>"))
             .addComponent(autoPilot)
             .addLabeledComponent("权限模式", modeBox)
             .addLabeledComponent("终端范围", scopeBox)

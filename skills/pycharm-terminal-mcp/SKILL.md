@@ -5,7 +5,11 @@ description: Use when operating PyCharm Terminal MCP Bridge for saved SSH termin
 
 # PyCharm Terminal MCP Bridge
 
-跨项目使用 IDE 已保存的服务器、终端和 Deployment 映射。本文根据 0.1.50 接口整理；运行版本与参数以本次 MCP 能力和工具 schema 为准，不固定 IDE 安装位置、项目路径、服务器或 MCP provider 名称。
+跨项目使用 IDE 已保存的服务器、终端和 Deployment 映射。本文根据 0.1.53 接口整理；运行版本与参数以本次 MCP 能力和工具 schema 为准，不固定 IDE 安装位置、项目路径、服务器或 MCP provider 名称。
+
+0.1.53 设置页顶部也提供中文连接复制/检查按钮。工具调用前关闭设置、连接、确认等模态弹窗；两种路由都在弹窗期间拒绝，不排队重发。既有操作不会自动取消，需独立核对；项目解析阶段错误由宿主返回，不要求插件业务 JSON。
+
+PyCharm 263：0.1.52 可导出全局跟随连接（Air JSON / Codex TOML），需用户加入客户端并启用。请求头 `IJ_MCP_SERVER_PROJECT_PATH: terminal-mcp:current-project` 跟随当前/最近激活的 IDE 项目，聊天目录无需打开。能力返回 `projectPath`；切换后重新读取能力/设置、发现服务器和终端，不复用旧 ID。不传旧项目 `projectPath`；显式 `project_selector` 须匹配本次项目。运行中的操作保持本次项目，多个窗口无法确定当前项目时拒绝。固定项目连接保持原生路由；ACP 自动注入仍受宿主限制。工具缺失先使用中文连接检查，不自动改配置、读取令牌或当作 SSH 失败。
 
 ## 开场与发现
 

@@ -2,18 +2,18 @@
 
 **简体中文** | [English](README.md)
 
-[![版本](https://img.shields.io/badge/version-0.1.50-blue.svg)](docs/CHANGELOG.md)
-[![PyCharm](https://img.shields.io/badge/PyCharm-2026.2%2B-green.svg)](https://www.jetbrains.com/pycharm/)
+[![版本](https://img.shields.io/badge/version-0.1.53-blue.svg)](docs/CHANGELOG.md)
+[![PyCharm](https://img.shields.io/badge/PyCharm-2026.3-green.svg)](https://www.jetbrains.com/pycharm/)
 
 终端 MCP 桥接是一个 PyCharm 全局插件，把集成终端标签页、已配置的终端预设，以及选定的 PyCharm 远程自动化动作暴露给 JetBrains MCP Server。有了它，支持 MCP 的 AI 代理可以列出终端、读取近期输出、发送文本、执行命令、创建 PyCharm 终端标签页、运行 Deploy to Server 配置，并通过 PyCharm 自身的 API 传输目录，同时在 IDE 内保留可配置的权限模型。
 
-插件是 IDE 级的，不是项目级：安装后会扫描所有已打开 PyCharm 项目中的终端标签页。
+插件是 IDE 级的，不是项目级：配置一次全局跟随连接后，可以随当前项目切换。每次 MCP 调用仅访问本次连接项目的终端和配置，不混用其他项目对象。
 
 **给 AI 代理：** 使用前请先读 [docs/AI_USAGE_GUIDE.md](docs/AI_USAGE_GUIDE.md) —— 面向 AI 的使用教程与工具契约（会话开场流程、26 个工具参数、权限开关、标准工作流、失败判定、安全红线），再读 [AGENTS.md](AGENTS.md) 中的强制规则与阅读顺序。另有可移植 skill 位于 [skills/pycharm-terminal-mcp/SKILL.md](skills/pycharm-terminal-mcp/SKILL.md)，整个 `skills/pycharm-terminal-mcp/` 目录可直接放入任意支持 `SKILL.md` 的 agent。
 
 ## 功能亮点
 
-- 跨所有已打开 PyCharm 项目全局发现终端。
+- 全局连接可跟随当前/最近激活的 PyCharm 项目；聊天目录无需在 IDE 打开。每次 MCP 调用的终端和项目操作限定在本次宿主项目，正在执行的操作不随窗口切换目标。
 - 在 PyCharm 通过终端 API 暴露的前提下，读取本地、SSH、WSL 及各类远程形态集成终端的近期输出。
 - 向选定终端标签页发送文本或执行命令。
 - 用 id、id 前缀、`selected`、`active`、`current`，或唯一的标题/项目/路径子串选择终端。
@@ -110,7 +110,7 @@
 
 ## 快速安装
 
-1. 从 [GitHub Releases](https://github.com/YANGFENG0001/pycharm-terminal-mcp/releases) 下载 `pycharm-terminal-mcp-0.1.50.zip`，或自行构建：
+1. 构建 `pycharm-terminal-mcp-0.1.53.zip`，或在发布后下载对应安装包：
 
    ```powershell
    .\gradlew.bat check buildPlugin
@@ -119,7 +119,7 @@
 2. 构建产物位于：
 
    ```text
-   build/distributions/pycharm-terminal-mcp-0.1.50.zip
+   build/distributions/pycharm-terminal-mcp-0.1.53.zip
    ```
 
 3. 在 PyCharm 中打开：
@@ -138,18 +138,24 @@
 
 更完整的步骤见 [docs/INSTALL.md](docs/INSTALL.md)。
 
+263 的 ACP 项目级自动注入仍要求对应项目已打开。0.1.52 可改用全局跟随连接：“工具 → 复制终端 MCP 连接配置”选择 Air/ACP JSON 或 Codex TOML，手动合并到客户端全局 MCP 并启用。请求头 `IJ_MCP_SERVER_PROJECT_PATH: terminal-mcp:current-project` 不固定任何项目/服务器，聊天目录无需在 IDE 打开。切换窗口后，下次调用跟随新项目；能力返回 `projectPath`，AI 必须重新发现服务器/终端。不确定当前窗口、项目关闭、显式旧项目参数均拒绝；不改变正在执行的传输目标。菜单不含凭据、不修改权限或客户端配置。详见 [MCP 排查](docs/MCP_TOOL_DISCOVERY.md)。
+
+0.1.53 在“设置 → 工具 → 终端 MCP 桥接”顶部也提供两个中文连接按钮。设置、连接、确认等模态弹窗打开时，项目解析及时拒绝，不再排队等待；关闭弹窗后再调用。该检查不取消此前已开始的操作。构建、运行和环境阻塞分别记录，见 [真实验收状态](docs/MCP_053_LIVE_ACCEPTANCE.md)，不把构建成功当作全部功能通过。
+
+安装包沿用原始 ID `com.mcob.terminal-mcp-bridge`，可原位更新 0.1.49。若曾单独安装 ID 为 `dev.terminalmcp.bridge` 的 0.1.50，请在插件设置中移除该同名副本，避免两套工具重复注册；不要直接删除正在使用的插件文件。
+
 ## 从源码构建
 
-本项目面向 PyCharm 2026.2 平台线。
+本版本面向 PyCharm 2026.3 的 263.7307.206，兼容范围仅声明为 263 平台线；其他 263 构建仍需独立验收。使用已安装 IDE 构建：
 
 ```powershell
-.\gradlew.bat check buildPlugin
+.\gradlew.bat check buildPlugin '-PpycharmLocalPath=D:/path/to/PyCharm'
 ```
 
-如果当前 shell 没有 `java`，构建前先用 JDK 17+ 或 PyCharm 自带的运行时：
+如果当前 shell 没有 `java`，构建前先用 PyCharm 2026.3 自带运行时（插件字节码目标仍为 17）：
 
 ```powershell
-$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.2\jbr'
+$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.3\jbr'
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 .\gradlew.bat check buildPlugin
 ```

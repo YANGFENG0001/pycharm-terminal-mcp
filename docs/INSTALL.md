@@ -4,17 +4,17 @@ This guide installs Terminal MCP Bridge into PyCharm and verifies that JetBrains
 
 ## Requirements
 
-- PyCharm 2026.2 or another compatible 262-based JetBrains IDE build.
+- PyCharm 2026.3, build 263.7307.206 or later in the 263 line. Only 263.7307.206 has been checked in this update; 262 is no longer declared compatible.
 - The bundled Terminal plugin enabled.
 - JetBrains MCP Server installed and enabled in the IDE.
-- JDK 17+ for local builds. PyCharm's bundled JBR works.
+- Use the target PyCharm's bundled JBR for local builds; plugin bytecode still targets JVM 17.
 
 ## Install From A Zip
 
 1. Download or build the plugin zip:
 
    ```text
-   pycharm-terminal-mcp-0.1.14.zip
+   pycharm-terminal-mcp-0.1.53.zip
    ```
 
 2. Open PyCharm settings:
@@ -50,15 +50,15 @@ From the project root:
 The built package will be written to:
 
 ```text
-build/distributions/pycharm-terminal-mcp-0.1.14.zip
+build/distributions/pycharm-terminal-mcp-0.1.53.zip
 ```
 
 If `java` is not available in the shell, point Gradle at PyCharm's bundled JBR:
 
 ```powershell
-$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.2\jbr'
+$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.3\jbr'
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
-.\gradlew.bat check buildPlugin
+.\gradlew.bat check buildPlugin '-PpycharmLocalPath=C:/Program Files/JetBrains/PyCharm 2026.3'
 ```
 
 ## Configure Permissions
@@ -84,7 +84,15 @@ Recommended starting point:
 
 ## Verify MCP Access
 
-After restart, ask your MCP client to call:
+Use **Tools → 检查终端 MCP 连接** for listener/open-project diagnostics. To use any chat directory without opening it in the IDE, choose **Tools → 复制终端 MCP 连接配置**, select Air/ACP JSON or Codex TOML, and merge the export into the client's global MCP configuration. Enable the connection and start a new session. This is not automatic ACP project injection; the plugin does not edit client settings. The current listener URL and `IJ_MCP_SERVER_PROJECT_PATH: terminal-mcp:current-project` select follow-current routing, without tokens/passwords or a fixed project.
+
+Each call uses the current/last-activated open IDE project. Capabilities `projectPath` reports it; rediscover servers/terminals after switching. Do not send old workspace paths as `projectPath`: omit it or use `terminal-mcp:current-project`. Explicit conflicting paths fail. Multiple projects without a known current window fail; a running operation stays pinned. Fixed-project connections without the special marker retain native IDE routing. No project open means project-dependent operations cannot proceed. Test instructions: [CURRENT_PROJECT_ROUTING_ACCEPTANCE.md](CURRENT_PROJECT_ROUTING_ACCEPTANCE.md).
+
+The distribution restores original plugin ID `com.mcob.terminal-mcp-bridge`. If ID `dev.terminalmcp.bridge` was separately installed as 0.1.50, remove that duplicate through IDE settings. Restart after installing 0.1.53, then reconnect the client. Never overwrite a live plugin directory manually.
+
+In 0.1.53 the Chinese settings page also contains both connection buttons. Close all modal settings/connection/confirmation dialogs before calling tools. Both fixed-project and follow-current routing reject requests during modal dialogs; this does not cancel operations already running.
+
+After restart, first call `get_terminal_mcp_capabilities` and `get_terminal_mcp_settings`. Confirm version 0.1.53, `projectPath`, and the actual permissions, then call:
 
 ```text
 list_global_terminals
@@ -93,16 +101,16 @@ list_global_terminals
 Then read the selected terminal:
 
 ```text
-read_global_terminal --terminal_id selected --max_lines 100
+read_global_terminal --terminal_id <discovered-id> --max_lines 100
 ```
 
 Run a harmless smoke test:
 
 ```text
-execute_global_terminal_command --terminal_id selected --command "echo terminal bridge smoke"
+execute_global_terminal_command --terminal_id <discovered-id> --command "echo terminal bridge smoke"
 ```
 
-Read again and confirm the smoke-test line appears in terminal output.
+For a POSIX/SSH terminal, verify completed=true, success=true, exit_code=0 and the returned output; do not require an extra read. Do not run this POSIX acceptance against PowerShell/cmd. Merely sent, timed out, or pending is not completion.
 
 To verify optional automation tools, enable the relevant switch first, then call:
 
@@ -113,7 +121,7 @@ list_selected_deployment_servers
 list_deployment_configurations
 ```
 
-For projects configured under `Settings | Build, Execution, Deployment | Deployment`, the bridge reads saved servers and mappings. `select_deployment_server` selects any one saved server in MCP session memory without changing `.idea/deployment.xml`; Terminal MCP Bridge transfer operations honor that choice. `upload_to_selected_deployment_server` and `invoke_selected_deployment_action` continue to call PyCharm's official actions, which follow PyCharm's persisted default/selected server. `transfer_between_deployment_servers` explicitly transfers from one saved server to another through PyCharm SSH/Eel endpoints. If the opt-in terminal fallback is enabled, both sides must resolve to exactly one visible SSH terminal matching host:port; directory transfer through that fallback is rejected.
+Saved Deployment servers and mappings are discovered from PyCharm. Select a session server using `select_deployment_server`, without editing `.idea/deployment.xml`. For daily updates prefer `upload_selected_files_to_deployment_server` with an explicit file list. Do not substitute an implicit whole-project upload. Large cross-server transfers may explicitly use `mode=server-relay`; no SSH/Eel endpoint must be invented from a Deployment ID. See AI_USAGE_GUIDE.md for the authoritative tool contracts and completion checks.
 
 Creation, deployment, and file-transfer tools are powerful and should be tested first against disposable terminals, test deployment configurations, or scratch directories.
 

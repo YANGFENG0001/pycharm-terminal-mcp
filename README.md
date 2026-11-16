@@ -2,18 +2,18 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-[![Version](https://img.shields.io/badge/version-0.1.50-blue.svg)](docs/CHANGELOG.md)
-[![PyCharm](https://img.shields.io/badge/PyCharm-2026.2%2B-green.svg)](https://www.jetbrains.com/pycharm/)
+[![Version](https://img.shields.io/badge/version-0.1.53-blue.svg)](docs/CHANGELOG.md)
+[![PyCharm](https://img.shields.io/badge/PyCharm-2026.3-green.svg)](https://www.jetbrains.com/pycharm/)
 
 Terminal MCP Bridge is a global PyCharm plugin that exposes integrated terminal tabs, configured terminal presets, and selected PyCharm remote automation actions to JetBrains MCP Server. It lets an MCP-capable AI agent list terminals, read recent terminal output, send text, execute commands, create PyCharm terminal tabs, run Deploy to Server configurations, and transfer directories through PyCharm's own APIs while keeping a configurable permission model in the IDE.
 
-The plugin is IDE-level, not project-level. After installation it scans terminal tabs across all open PyCharm projects.
+The plugin is IDE-level. In 0.1.52, **Tools → 复制终端 MCP 连接配置** exports a global follow-current connection (Air/ACP JSON or Codex TOML). Add and enable it in the client once. The chat folder need not be open in PyCharm: each call uses the current/last-activated IDE project, exposed as capabilities `projectPath`. Rediscover servers and terminals after switching. A running operation stays pinned; stale explicit project parameters fail instead of redirecting. Native project-scoped ACP injection is not changed automatically. See [connection setup](docs/MCP_TOOL_DISCOVERY.md).
 
 **For AI agents:** read [docs/AI_USAGE_GUIDE.md](docs/AI_USAGE_GUIDE.md) first — it documents the session opening flow, all 26 tool contracts, permission switches, standard workflows, failure judgement, and hard safety rules — then [AGENTS.md](AGENTS.md) for mandatory agent rules and reading order. A portable skill is available at [skills/pycharm-terminal-mcp/SKILL.md](skills/pycharm-terminal-mcp/SKILL.md); the whole `skills/pycharm-terminal-mcp/` directory can be dropped into any agent that supports `SKILL.md`.
 
 ## Highlights
 
-- Global terminal discovery across open PyCharm projects.
+- Global connection with per-call project-scoped terminal discovery; no fixed project/server in exported configuration.
 - Read recent output from local, SSH, WSL, and remote-looking integrated terminals when PyCharm exposes them through the terminal API.
 - Send text or execute commands in a selected terminal tab.
 - Select terminals by id, id prefix, `selected`, `active`, `current`, or a unique title/project/path substring.
@@ -110,7 +110,7 @@ Typical selectors accepted by terminal tools:
 
 ## Quick Install
 
-1. Download `pycharm-terminal-mcp-0.1.50.zip` from [GitHub Releases](https://github.com/YANGFENG0001/pycharm-terminal-mcp/releases), or build it yourself:
+1. Build `pycharm-terminal-mcp-0.1.53.zip` (or use the matching package when published):
 
    ```powershell
    .\gradlew.bat check buildPlugin
@@ -119,7 +119,7 @@ Typical selectors accepted by terminal tools:
 2. The built zip is at:
 
    ```text
-   build/distributions/pycharm-terminal-mcp-0.1.50.zip
+   build/distributions/pycharm-terminal-mcp-0.1.53.zip
    ```
 
 3. In PyCharm, open:
@@ -138,18 +138,24 @@ Typical selectors accepted by terminal tools:
 
 For a fuller walkthrough, see [docs/INSTALL.md](docs/INSTALL.md).
 
+On 263, native ACP project-scoped injection requires the workspace to be open. To decouple it from the chat folder, use **Tools → 复制终端 MCP 连接配置**, choose Air/ACP JSON or Codex TOML, and add/enable the exported connection globally in the client. The `terminal-mcp:current-project` routing header follows the current IDE project on each call, without exporting credentials. Do not send a stale `projectPath`; inspect capabilities `projectPath` and rediscover targets after switching. **Tools → 检查终端 MCP 连接** diagnoses the listener and open projects. These menus do not modify client settings or MCP permissions. See [MCP troubleshooting](docs/MCP_TOOL_DISCOVERY.md).
+
+In 0.1.53, both Chinese connection buttons are also at the top of **Settings → Tools → 终端 MCP 桥接**. Close settings/connection/confirmation dialogs before making tool calls: project resolution rejects during modal dialogs instead of queueing requests. This does not cancel previously started operations. See [live acceptance status](docs/MCP_053_LIVE_ACCEPTANCE.md); a successful build does not prove installation or all runtime features.
+
+The distribution keeps the original `com.mcob.terminal-mcp-bridge` ID so 0.1.49 upgrades in place. If a separately installed 0.1.50 with ID `dev.terminalmcp.bridge` is present, remove that duplicate via Settings → Plugins before restarting; do not run two bridge toolsets.
+
 ## Build From Source
 
-This project targets the PyCharm 2026.2 platform line.
+This version targets PyCharm 2026.3, build 263.7307.206, and declares compatibility only with the 263 line. Other 263 builds require their own runtime checks. To build against an existing installation:
 
 ```powershell
-.\gradlew.bat check buildPlugin
+.\gradlew.bat check buildPlugin '-PpycharmLocalPath=D:/path/to/PyCharm'
 ```
 
-If your shell has no `java`, use a JDK 17+ or PyCharm's bundled runtime before building:
+If your shell has no `java`, use PyCharm 2026.3's bundled runtime before building (JVM bytecode target remains 17):
 
 ```powershell
-$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.2\jbr'
+$env:JAVA_HOME = 'C:\Program Files\JetBrains\PyCharm 2026.3\jbr'
 $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 .\gradlew.bat check buildPlugin
 ```
